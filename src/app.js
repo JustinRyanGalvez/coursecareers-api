@@ -1,40 +1,26 @@
 import express from 'express';
+import Database from 'better-sqlite3';
 
+const db = new Database('favorites.db');
 const app = express();
 const port = 3000;
 
-const favorites = [
-  {
-    id: 1,
-    name: 'goog',
-    url: 'https://google.com',
-  },
-  {
-    id: 2,
-    name: 'social',
-    url: 'https://instagram.com',
-  },
-  {
-    id: 3,
-    name: 'code',
-    url: 'https://leetcode.com',
-  },
-];
-
 // Handler for GET method
 app.get('/favorites', (req, res) => {
-  // Rest operator!
-  const favoritesCopy = [...favorites];
+  let query = 'SELECT * FROM favorites';
   const sort = req.query.sort;
+
   if (sort === 'asc') {
-    favoritesCopy.sort((a, b) => a.name.localeCompare(b.name));
+    query += ' ORDER BY name ASC';
   } else if (sort === 'desc') {
-    favoritesCopy.sort((a, b) => b.name.localeCompare(a.name));
+    query += ' ORDER BY name DESC';
   }
+
+  const favorites = db.prepare(query).all();
   // When you have a property name with the same name as data, you can leave it blank
   // res.json({ favorites: favorites });
 
-  res.json({ favorites: favoritesCopy });
+  res.json({ favorites });
 });
 
 // GET method with id
