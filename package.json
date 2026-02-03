@@ -98,6 +98,7 @@
     "wrappy": "^1.0.2"
   },
   "scripts": {
+    "prod": "cross-env NODE_ENV=production node src/app.js",
     "start": "nodemon src/app.js"
   },
   "repository": {
@@ -113,6 +114,7 @@
   },
   "homepage": "https://github.com/JustinRyanGalvez/coursecareers-api#readme",
   "devDependencies": {
+    "cross-env": "^10.1.0",
     "nodemon": "^3.1.11"
   }
 }
