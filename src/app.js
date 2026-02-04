@@ -1,24 +1,27 @@
 import express from 'express';
 import Database from 'better-sqlite3';
 
-const db = new Database('favorite.db');
+const db = new Database('favorites.db');
 const app = express();
+
+// Adjusts middleware to take incoming request bodies
+app.use(express.json());
 const port = 3000;
 
 // Middleware
 // Used to do mini service before hitting server e.g. logging/authentication/etc.
 // needs to invoke next to continue to the next thing
-app.use((req, res, next) => {
-  console.log('hit 1');
-  next();
-});
+// app.use((req, res, next) => {
+//   console.log('hit 1');
+//   next();
+// });
 
-app.use((req, res, next) => {
-  console.log('hit 2');
-  next();
-});
+// app.use((req, res, next) => {
+//   console.log('hit 2');
+//   next();
+// });
 
-// Add midware to another method
+// Add middleware to another method
 
 // app.get('/favorites', (req, res, next) => {
 //   console.log('Pre processing...');
@@ -48,7 +51,94 @@ app.get('/favorites', (req, res) => {
   // When you have a property name with the same name as data, you can leave it blank
   // res.json({ favorites: favorites });
 
+  // Return not needed as this acts like a return
   res.json({ favorites });
+});
+
+// Handler for POST method
+app.post('/favorites', (req, res) => {
+  const { name, url } = req.body;
+
+  if (!name) {
+    return res.status(400).json({ error: 'Name required' });
+  }
+
+  if (!url) {
+    return res.status(400).json({ error: 'Url required' });
+  }
+
+  const result = db
+    .prepare('INSERT INTO favorites (name, url) VALUES (?, ?)')
+    .run(name, url);
+
+  res.status(201).json({ id: result.lastInsertRowid });
+});
+
+app.delete('/favorites/:id', (req, res) => {
+  const id = parseInt(req.params.id);
+
+  const result = db.prepare('DELETE FROM favorites WHERE id = ?').run(id);
+
+  if (!result.changes) {
+    return res.status(404).json({ error: 'Favorite not found' });
+  }
+  res.sendStatus(200);
+});
+
+app.put('/favorites/:id', (req, res) => {
+  const id = parseInt(req.params.id);
+  const { name, url } = req.body;
+
+  if (!name) {
+    return res.status(400).json({ error: 'name required' });
+  }
+
+  if (!url) {
+    return res.status(400).json({ error: 'url required' });
+  }
+
+  const result = db
+    .prepare('UPDATE favorites SET name=?, url=? WHERE id=? ')
+    .run(name, url, id);
+
+  if (!result.changes) {
+    return res.status(404).json({ error: 'Favorite not found' });
+  }
+
+  res.sendStatus(200);
+});
+
+app.patch('/favorites/:id', (req, res) => {
+  const id = parseInt(req.params.id);
+  const { name, url } = req.body;
+
+  if (!name && !url) {
+    return res.status(400).json({ error: 'Name or URL required' });
+  }
+
+  //Code below goes to the database twice, all commented code is no longer needed if we use COALESCE
+  // If i pass a new name or url using req.body, use that value. Otherwise, keep the value already in table
+
+  // const favorite = db.prepare('SELECT * FROM favorites WHERE id=?').get(id);
+
+  // if (!favorite) {
+  //   return res.status(404).json({ error: 'Favorite not found' });
+  // }
+
+  // const newName = name || favorite.name;
+  // const newUrl = url || favorite.url;
+
+  const result = db
+    .prepare(
+      'UPDATE favorites SET name=COALESCE(?, name), url=COALESCE(?, url), WHERE id=?',
+    )
+    .run(name, url, id);
+
+  if (!result.changes) {
+    return res.status(400).json({ error: 'Favorite not found' });
+  }
+
+  res.sendStatus(200);
 });
 
 // GET method with id
@@ -78,6 +168,8 @@ app.get('/favorites/:id', (req, res, next) => {
   //   next(err);
   // }
 });
+
+// Middleware - error checking goes at the bottom/last typically
 
 app.use((err, req, res, next) => {
   // console.log(err);
