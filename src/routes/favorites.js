@@ -12,7 +12,6 @@ const router = express.Router();
 //   next();
 // });
 
-
 // Middleware
 // Used to do mini service before hitting server e.g. logging/authentication/etc.
 // needs to invoke next to continue to the next thing
@@ -135,7 +134,7 @@ router.patch('/:id', (req, res) => {
 
   const result = db
     .prepare(
-      'UPDATE favorites SET name=COALESCE(?, name), url=COALESCE(?, url), WHERE id=?',
+      'UPDATE favorites SET name=COALESCE(?, name), url=COALESCE(?, url) WHERE id=?',
     )
     .run(name, url, id);
 
@@ -147,7 +146,7 @@ router.patch('/:id', (req, res) => {
 });
 
 // GET method with id
-router.get('/favorites/:id', (req, res, next) => {
+router.get('/:id', (req, res, next) => {
   // try {
   // Grab id from url request
   const id = parseInt(req.params.id);

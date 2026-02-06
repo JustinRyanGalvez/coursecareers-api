@@ -5,10 +5,10 @@ import { eq } from 'semver';
 
 const db = new Database('favorites.db');
 const app = express();
-const port = 3000;
 
 // Adjusts middleware to take incoming request bodies
 app.use(express.json());
+const port = 3000;
 
 // Sets path of /favorites to router in favorites.js file
 app.use('/favorites', favorites);
