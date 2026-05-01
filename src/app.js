@@ -2,13 +2,25 @@ import express from 'express';
 import Database from 'better-sqlite3';
 import favorites from './routes/favorites.js';
 import { eq } from 'semver';
+import cors from 'cors';
 
 const db = new Database('favorites.db');
+
 const app = express();
 const port = 3000;
+const frontEndUrl = 'http://localhost:3001';
+const frontEndUrl2 = 'http://localhost:3002';
 
 // Adjusts middleware to take incoming request bodies
 app.use(express.json());
+
+app.use(
+  cors({
+    origin: [frontEndUrl, frontEndUrl2],
+    methods: ['GET', 'POST', 'PATCH', 'PUT', 'DELETE'],
+    allowedHeader: ['Content-Type', 'Accept'],
+  }),
+);
 
 // Sets path of /favorites to router in favorites.js file
 app.use('/favorites', favorites);
