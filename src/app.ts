@@ -1,6 +1,5 @@
-// @ts-nocheck
-
 import express from "express";
+import type { Request, Response, NextFunction } from "express";
 import Database from "better-sqlite3";
 import favorites from "./routes/favorites.ts";
 import { eq } from "semver";
@@ -23,7 +22,7 @@ app.use(
   cors({
     origin: [frontEndUrl, frontEndUrl2],
     methods: ["GET", "POST", "PATCH", "PUT", "DELETE"],
-    allowedHeader: ["Content-Type", "Accept"],
+    allowedHeaders: ["Content-Type", "Accept"],
   }),
 );
 
@@ -43,7 +42,7 @@ app.use("/favorites", favorites);
 
 // Middleware - error checking goes at the bottom/last typically
 
-app.use((err, req, res, next) => {
+app.use((err: any, req: Request, res: Response, next: NextFunction): void => {
   // console.log(err);
 
   // Can check for specific error

@@ -1,11 +1,16 @@
-// @ts-nocheck
-
 import express from "express";
 import Database from "better-sqlite3";
 
 const db = new Database("favorites.db");
 
 const router = express.Router();
+
+// Added an interface so we can prevent misuse params for TS
+interface Favorite {
+  id?: number;
+  name: string;
+  url: string;
+}
 
 // Routing -- use this to see if it is hitting the database
 
@@ -53,7 +58,7 @@ router.get("/", (req, res) => {
     query += " ORDER BY name DESC";
   }
 
-  const favorites = db.prepare(query).all();
+  const favorites = db.prepare(query).all() as Favorite[];
   // When you have a property name with the same name as data, you can leave it blank
   // res.json({ favorites: favorites });
 
@@ -63,19 +68,19 @@ router.get("/", (req, res) => {
 
 // Handler for POST method
 router.post("/", (req, res) => {
-  const { name, url } = req.body;
+  const newFavorite: Favorite = req.body;
 
-  if (!name) {
+  if (!newFavorite.name) {
     return res.status(400).json({ error: "Name required" });
   }
 
-  if (!url) {
+  if (!newFavorite.url) {
     return res.status(400).json({ error: "Url required" });
   }
 
   const result = db
     .prepare("INSERT INTO favorites (name, url) VALUES (?, ?)")
-    .run(name, url);
+    .run(newFavorite.name, newFavorite.url);
 
   res.status(201).json({ id: result.lastInsertRowid });
 });
@@ -155,7 +160,10 @@ router.get("/:id", (req, res, next) => {
 
   // Check if id matches any id in favorites array (iterates through all of them to find the first match)
   // Return favorites object if found to var favorite
-  const favorite = db.prepare("SELECT * FROM favorites WHERE id = ?").get(id);
+  // 'as' is type assertion - not always necessary but good if you want to pull individual items from Unknowns in TS
+  const favorite = db
+    .prepare("SELECT * FROM favorites WHERE id = ?")
+    .get(id) as Favorite;
 
   if (!favorite) {
     // return is needed here to fix CANNOT SET HEADERS AFTER THEY ARE SENT TO THE CLIENT issue
