@@ -1,4 +1,5 @@
 import express from "express";
+import type { Request, Response } from "express";
 import Database from "better-sqlite3";
 
 const db = new Database("favorites.db");
@@ -48,139 +49,176 @@ interface Favorite {
 
 // Handler for GET method
 // Add authenticate in parameter to use in that way
-router.get("/", (req, res) => {
-  let query = "SELECT * FROM favorites";
-  const sort = req.query.sort;
+router.get(
+  "/",
+  (
+    req: Request<any, any, any, { sort: string }>,
+    res: Response<{ favorites: Favorite[] }>,
+  ) => {
+    let query = "SELECT * FROM favorites";
+    const sort = req.query.sort;
 
-  if (sort === "asc") {
-    query += " ORDER BY name ASC";
-  } else if (sort === "desc") {
-    query += " ORDER BY name DESC";
-  }
+    if (sort === "asc") {
+      query += " ORDER BY name ASC";
+    } else if (sort === "desc") {
+      query += " ORDER BY name DESC";
+    }
 
-  const favorites = db.prepare(query).all() as Favorite[];
-  // When you have a property name with the same name as data, you can leave it blank
-  // res.json({ favorites: favorites });
+    const favorites = db.prepare(query).all() as Favorite[];
+    // When you have a property name with the same name as data, you can leave it blank
+    // res.json({ favorites: favorites });
 
-  // Return not needed as this acts like a return
-  res.json({ favorites });
-});
+    // Return not needed as this acts like a return
+    res.json({ favorites });
+  },
+);
 
 // Handler for POST method
-router.post("/", (req, res) => {
-  const newFavorite: Favorite = req.body;
+router.post(
+  "/",
+  (
+    req: Request<any, any, Favorite>,
+    res: Response<{ id: number | bigint } | { error: string }>,
+  ) => {
+    const newFavorite: Favorite = req.body;
 
-  if (!newFavorite.name) {
-    return res.status(400).json({ error: "Name required" });
-  }
+    if (!newFavorite.name) {
+      return res.status(400).json({ error: "Name required" });
+    }
 
-  if (!newFavorite.url) {
-    return res.status(400).json({ error: "Url required" });
-  }
+    if (!newFavorite.url) {
+      return res.status(400).json({ error: "Url required" });
+    }
 
-  const result = db
-    .prepare("INSERT INTO favorites (name, url) VALUES (?, ?)")
-    .run(newFavorite.name, newFavorite.url);
+    const result = db
+      .prepare("INSERT INTO favorites (name, url) VALUES (?, ?)")
+      .run(newFavorite.name, newFavorite.url);
 
-  res.status(201).json({ id: result.lastInsertRowid });
-});
+    res.status(201).json({ id: result.lastInsertRowid });
+  },
+);
 
-router.delete("/:id", (req, res) => {
-  const id = parseInt(req.params.id);
+router.delete(
+  "/:id",
+  (req: Request<{ id: string }>, res: Response<string | { error: string }>) => {
+    const id = parseInt(req.params.id);
 
-  const result = db.prepare("DELETE FROM favorites WHERE id = ?").run(id);
+    const result = db.prepare("DELETE FROM favorites WHERE id = ?").run(id);
 
-  if (!result.changes) {
-    return res.status(404).json({ error: "Favorite not found" });
-  }
-  res.sendStatus(200);
-});
+    if (!result.changes) {
+      return res.status(404).json({ error: "Favorite not found" });
+    }
+    res.sendStatus(200);
+  },
+);
 
-router.put("/:id", (req, res) => {
-  const id = parseInt(req.params.id);
-  const { name, url } = req.body;
+router.put(
+  "/:id",
+  (
+    req: Request<{ id: string }, {}, Favorite>,
+    res: Response<{ favorite: Favorite } | { error: string }>,
+  ) => {
+    const id = parseInt(req.params.id);
+    const newFavorite = req.body;
 
-  if (!name) {
-    return res.status(400).json({ error: "name required" });
-  }
+    if (!newFavorite.name) {
+      return res.status(400).json({ error: "name required" });
+    }
 
-  if (!url) {
-    return res.status(400).json({ error: "url required" });
-  }
+    if (!newFavorite.url) {
+      return res.status(400).json({ error: "url required" });
+    }
 
-  const result = db
-    .prepare("UPDATE favorites SET name=?, url=? WHERE id=? ")
-    .run(name, url, id);
+    const result = db
+      .prepare("UPDATE favorites SET name=?, url=? WHERE id=? ")
+      .run(newFavorite.name, newFavorite.url, id);
 
-  if (!result.changes) {
-    return res.status(404).json({ error: "Favorite not found" });
-  }
+    if (!result.changes) {
+      return res.status(404).json({ error: "Favorite not found" });
+    }
 
-  res.sendStatus(200);
-});
+    const favorite = db
+      .prepare("SELECT * FROM favorites WHERE id =?")
+      .get(id) as Favorite;
 
-router.patch("/:id", (req, res) => {
-  const id = parseInt(req.params.id);
-  const { name, url } = req.body;
+    res.sendStatus(200).send({ favorite });
+  },
+);
 
-  if (!name && !url) {
-    return res.status(400).json({ error: "Name or URL required" });
-  }
+router.patch(
+  "/:id",
+  (
+    req: Request<{ id: string }, any, Favorite>,
+    res: Response<string | { error: string }>,
+  ) => {
+    const id = parseInt(req.params.id);
+    const { name, url } = req.body;
 
-  //Code below goes to the database twice, all commented code is no longer needed if we use COALESCE
-  // If i pass a new name or url using req.body, use that value. Otherwise, keep the value already in table
+    if (!name && !url) {
+      return res.status(400).json({ error: "Name or URL required" });
+    }
 
-  // const favorite = db.prepare('SELECT * FROM favorites WHERE id=?').get(id);
+    //Code below goes to the database twice, all commented code is no longer needed if we use COALESCE
+    // If i pass a new name or url using req.body, use that value. Otherwise, keep the value already in table
 
-  // if (!favorite) {
-  //   return res.status(404).json({ error: 'Favorite not found' });
-  // }
+    // const favorite = db.prepare('SELECT * FROM favorites WHERE id=?').get(id);
 
-  // const newName = name || favorite.name;
-  // const newUrl = url || favorite.url;
+    // if (!favorite) {
+    //   return res.status(404).json({ error: 'Favorite not found' });
+    // }
 
-  const result = db
-    .prepare(
-      "UPDATE favorites SET name=COALESCE(?, name), url=COALESCE(?, url) WHERE id=?",
-    )
-    .run(name, url, id);
+    // const newName = name || favorite.name;
+    // const newUrl = url || favorite.url;
 
-  if (!result.changes) {
-    return res.status(400).json({ error: "Favorite not found" });
-  }
+    const result = db
+      .prepare(
+        "UPDATE favorites SET name=COALESCE(?, name), url=COALESCE(?, url) WHERE id=?",
+      )
+      .run(name, url, id);
 
-  res.sendStatus(200);
-});
+    if (!result.changes) {
+      return res.status(400).json({ error: "Favorite not found" });
+    }
+
+    res.sendStatus(200);
+  },
+);
 
 // GET method with id
-router.get("/:id", (req, res, next) => {
-  // try {
-  // Grab id from url request
-  const id = parseInt(req.params.id);
+router.get(
+  "/:id",
+  (
+    req: Request<{ id: string }>,
+    res: Response<{ favorite: Favorite } | { error: string }>,
+  ) => {
+    // try {
+    // Grab id from url request
+    const id = parseInt(req.params.id);
 
-  // Check if id matches any id in favorites array (iterates through all of them to find the first match)
-  // Return favorites object if found to var favorite
-  // 'as' is type assertion - not always necessary but good if you want to pull individual items from Unknowns in TS
-  const favorite = db
-    .prepare("SELECT * FROM favorites WHERE id = ?")
-    .get(id) as Favorite;
+    // Check if id matches any id in favorites array (iterates through all of them to find the first match)
+    // Return favorites object if found to var favorite
+    // 'as' is type assertion - not always necessary but good if you want to pull individual items from Unknowns in TS
+    const favorite = db
+      .prepare("SELECT * FROM favorites WHERE id = ?")
+      .get(id) as Favorite;
 
-  if (!favorite) {
-    // return is needed here to fix CANNOT SET HEADERS AFTER THEY ARE SENT TO THE CLIENT issue
-    // without return here, it wants to run the res.json({ favorite }) line beneath which sends another response to the user, thus changing the header
-    // return is the fix (last json item we will return) OR encapsulate the last line in an else {} -- just dont have them both run
-    return res.status(404).json({ error: "Favorite not found" });
-  }
+    if (!favorite) {
+      // return is needed here to fix CANNOT SET HEADERS AFTER THEY ARE SENT TO THE CLIENT issue
+      // without return here, it wants to run the res.json({ favorite }) line beneath which sends another response to the user, thus changing the header
+      // return is the fix (last json item we will return) OR encapsulate the last line in an else {} -- just dont have them both run
+      return res.status(404).json({ error: "Favorite not found" });
+    }
 
-  // Like to enclose this with brackets to add a favorite id in front of the object
-  res.json({ favorite });
+    // Like to enclose this with brackets to add a favorite id in front of the object
+    res.json({ favorite });
 
-  // Part of try catch block - useful if you want middle ware in this function as well for whatever reason
+    // Part of try catch block - useful if you want middle ware in this function as well for whatever reason
 
-  // } catch (err) {
-  //   console.log('CUSTOM TO THIS ROUTE');
-  //   next(err);
-  // }
-});
+    // } catch (err) {
+    //   console.log('CUSTOM TO THIS ROUTE');
+    //   next(err);
+    // }
+  },
+);
 
 export default router;
