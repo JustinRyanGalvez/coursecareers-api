@@ -3,9 +3,9 @@
     "module": "esnext",
     "target": "esnext",
     "types": [],
-    "sourceMap": true,
-    "declaration": true,
-    "declarationMap": true,
+    "sourceMap": false,
+    "declaration": false,
+    "declarationMap": false,
     "noUncheckedIndexedAccess": true,
     "exactOptionalPropertyTypes": true,
     "strict": true,
@@ -16,8 +16,6 @@
     "moduleDetection": "force",
     "skipLibCheck": true,
     "outDir": "dist",
-    "rootDir": "src",
-    "allowImportingTsExtensions": true,
-    "noEmit": true
+    "rootDir": "src"
   }
 }
