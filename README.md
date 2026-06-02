@@ -1,1 +1,1 @@
-This is the backend of the API which works in conjuction with the front end repo coursecareers-CLI which can also be found on my profile.
+This is a REST API that allows users to bookmark they're favorite websites using sqlite3 and TypeScript. 
