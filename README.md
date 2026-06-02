@@ -1,1 +1,1 @@
-This is a REST API that allows users to bookmark they're favorite websites using sqlite3 and TypeScript. This works in conjuction with the coursecareers-bookmarks-cli that other developers can use to mess around! Includes an SDK and SDK Tests.
+This is a REST API that allows users to bookmark they're favorite websites using sqlite3, Node.js, and TypeScript. This works in conjuction with the coursecareers-bookmarks-cli that other developers can use to mess around! Includes an SDK and SDK Tests.
